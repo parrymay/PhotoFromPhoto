@@ -1,27 +1,24 @@
-import tkinter
 from shutil import copyfile
 import tkinter.filedialog
-from distutils.dir_util import copy_tree
 from tkinter import *
-import glob
-from os.path import isfile, join
-import os
-from os import listdir
-from os import path
 from tkinter import messagebox
+from os import listdir
 from tkinter.filedialog import askopenfile
 from tkinter.filedialog import askdirectory
 from PIL import Image
 import os
+import math
+import shutil
 
 
 def select_f():
     path_f = askopenfile(title='Open your image',
                          initialdir=os.getcwd(),
                          filetypes=[('JPG', '*.jpg')])
+    messagebox.showinfo('Information', 'Wait about 2 minute')
     path_f = path_f.name
     path_pixelate = pixelate(path_f)
-    return path_f.name, path_pixelate
+    compare_color(path_pixelate, path_dir)
 
 
 def pixelate(path_f):
@@ -42,83 +39,67 @@ def pixelate(path_f):
     return path_pixelate
 
 
-def dominate_color(path):
-    path_temp = path + 'temp2'
-    copy_tree(path, path_temp)
-    for f in listdir(path_temp):
-        if f.endswith('.jpg'):
-            im = Image.open(path_temp + '/' + f)
-            im = im.resize((1, 1), Image.BILINEAR)  # Play with it
-            img_data = list(im.getdata())
-            print(img_data)
-            im.save(path_temp + '/' + f)
-
-
-def crop_photos(path):
+def crop_photos(path_dir):
     pixel_sizes = int(pix_size.get())
-    path_temp = path + 'temp1'
-    copy_tree(path, path_temp)
-    for f in listdir(path_temp):
-        im = Image.open(path_temp + '/' + f)
+    path_temp = path_dir + 'temp1'
+    os.mkdir(path_temp)
+    for f in listdir(path_dir):
+        im = Image.open(path_dir + '/' + f)
         im = im.resize((pixel_sizes, pixel_sizes), Image.NEAREST)
         im.save(path_temp + '/' + f)
 
 
-def paste(path):
-    im = Image.open()
+def compare_color(path_init_photo, path_dir):
+    # for i in range(0, 400):
+        # url = 'https://picsum.photos/100'
+        # img = urllib.request.urlopen(url).read()
+        # out = open('img' + str(i) + '.jpg', "wb")
+        # out.write(img)
+        # out.close()
+    pixel_sizes = int(pix_size.get())
+    im = Image.open(path_init_photo)
+    # im = im.convert('RGBA')
     width, height = im.size
-    print(width)
-    big_pixel_Y = height//pix_size
-    big_pixel_X = width//pix_size
-    im = Image.open(path)
-    data = []
-    for pixel_Y in range(1, big_pixel_Y):
-        pixel_Y = pixel_Y*big_pixel_Y
-        for pixel_X in range(1, big_pixel_X):
-            pix_data = list(im.getdata())
-            data.append([pixel_X], [pixel_Y], pix_data)
-
-
-# def read_img(input_pixfile_path):
-#     im = Image.open(input_pixfile_path, 'r')
-#     width, height = im.size
-#     img_data = list(im.getdata())
-#     print(img_data[1:3])
-    # x_pos = 0
-    # y_pos = 1
-    #
-    # pixel_value = []
-    # x = []
-    # y = []
-    # for pix in img_data:
-    #     if x_pos == width:
-    #         x_pos = 1
-    #         y_pos += 1
-    #     else:
-    #         x_pos += 1
-    #     pixel_value.append(pix[2])
-    #     x.append(x_pos)
-    #     y.append(y_pos)
-    # print()
+    big_pixel_Y = height//pixel_sizes
+    big_pixel_X = width//pixel_sizes
+    image_pix_data = im.load()
+    for pixY in range(0, big_pixel_Y):
+        pixY = pixY*pixel_sizes
+        for pixX in range(0, big_pixel_X):
+            pixX = pixX*pixel_sizes
+            min_diff = 300
+            for f in listdir(path_dir):
+                if f.endswith('.jpg'):
+                    photo_path = path_dir + 'temp1' + '/' + f
+                    photo_o = Image.open(photo_path)
+                    # photo_o = photo_o.convert('RGBA')
+                    photo = photo_o.resize((1, 1), Image.BILINEAR)
+                    photo_pix_data = photo.load()
+                    difference_color = math.sqrt((image_pix_data[pixX, pixY][0] - photo_pix_data[0, 0][0])**2 +
+                                                 (image_pix_data[pixX, pixY][1] - photo_pix_data[0, 0][1])**2 +
+                                                 (image_pix_data[pixX, pixY][2] - photo_pix_data[0, 0][2])**2)
+                    if difference_color < min_diff:
+                        min_diff = difference_color
+                        path_to_min = photo_o
+            im.paste(path_to_min, (pixX, pixY))
+    im.show()
+    # im.save("new.jpg")
+    for folder in listdir(os.getcwd()):
+        a = folder.find('temp')
+        if a != -1:
+            shutil.rmtree(folder)
 
 
 def select_dir():
+    global path_dir
     path_dir = askdirectory(title='Open dir with many photos', initialdir=os.getcwd())
     crop_photos(path_dir)
-    dominate_color(path_dir)
     return path_dir
 
 
-def delete_temp():
-    return
-
-
-def start_program():
-
-    return
-
-
-def save_f():
+def save_f(im):
+    save_path = askopenfile(title='Open dir for save result')
+    im.save(save_path + '/' + 'result.jpg')
     return
 
 
@@ -129,17 +110,14 @@ window.resizable(width=False, height=False)
 
 main_menu = Menu()
 
-main_menu.add_command(label='1.Select InitPhoto -> |',
-                      command=select_f)
-
-main_menu.add_command(label='2.Select Directory -> |',
+main_menu.add_command(label='1.Select Photos Directory -> |',
                       command=select_dir)
 
-main_menu.add_command(label='3.Start -> |',
-                      command=start_program)
+main_menu.add_command(label='2.Select InitPhoto -> |',
+                      command=select_f)
 
-main_menu.add_command(label='4.Save',
-                      command=save_f)
+# main_menu.add_command(label='3.Save',
+                      # command=save_f)
 
 tkinter.Label(text="Размер пикселя").grid(row=0, column=1)
 pix_size = tkinter.StringVar(value=40)
@@ -150,22 +128,10 @@ window.config(menu=main_menu)
 window.mainloop()
 
 
-# dominate_pixels()
-# list1 = [2,3,4,3,10,3,5,6,3]
-# listnew = []
-# print(list1.count(3))
-# for n in list1:
-#     print(n)
-#     print(list1.count(n))
-#     elem = filter(lambda n: list1.count(n)//2 == 0, list1)
-#     print(list(elem))
-#     listnew = listnew.append(list(elem))
-# print('The count of element: 3 is ', listnew)
-# dominant_color()
-
-# pixel_size = 35
-# crop_img()
-#
 # clean_img = Image.new(mode='RGB', size=(1440, 1440))
 # # clean_img.show()
 
+# try except
+
+# def delete_temp():
+#     return
