@@ -57,6 +57,9 @@ def compare_color(path_init_photo, path_dir):
         # out.write(img)
         # out.close()
     pixel_sizes = int(pix_size.get())
+    # im = Image.open(path_init_photo).convert('RGBA')
+    # im.putalpha(255)
+
     im = Image.open(path_init_photo)
     # im = im.convert('RGBA')
     width, height = im.size
@@ -72,6 +75,7 @@ def compare_color(path_init_photo, path_dir):
                 if f.endswith('.jpg'):
                     photo_path = path_dir + 'temp1' + '/' + f
                     photo_o = Image.open(photo_path)
+                    # photo_o = Image.open(photo_path)
                     # photo_o = photo_o.convert('RGBA')
                     photo = photo_o.resize((1, 1), Image.BILINEAR)
                     photo_pix_data = photo.load()
@@ -81,7 +85,15 @@ def compare_color(path_init_photo, path_dir):
                     if difference_color < min_diff:
                         min_diff = difference_color
                         path_to_min = photo_o
-            im.paste(path_to_min, (pixX, pixY))
+
+            # r, g, b = path_to_min.split()
+            # a = Image.new('L', (pixel_sizes, pixel_sizes), 0xcc)
+            # path_to_min = Image.merge('RGBA', (r, g, b, a))
+
+            path_to_min.convert('RGBA')
+            path_to_min.putalpha(255)
+
+            im.paste(path_to_min, (pixX, pixY), path_to_min)
     im.show()
     # im.save("new.jpg")
     for folder in listdir(os.getcwd()):
