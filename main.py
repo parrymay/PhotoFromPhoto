@@ -9,6 +9,7 @@ from PIL import Image
 import os
 import math
 import shutil
+import urllib.request
 
 
 def select_f():
@@ -18,7 +19,7 @@ def select_f():
     messagebox.showinfo('Information', 'Wait about 2 minute')
     path_f = path_f.name
     path_pixelate = pixelate(path_f)
-    compare_color(path_pixelate, path_dir)
+    compare_color(path_pixelate, path_dir, path_f)
 
 
 def pixelate(path_f):
@@ -49,18 +50,21 @@ def crop_photos(path_dir):
         im.save(path_temp + '/' + f)
 
 
-def compare_color(path_init_photo, path_dir):
+def compare_color(path_pix_photo, path_dir, path_init_photo):
+
     # for i in range(0, 400):
-        # url = 'https://picsum.photos/100'
-        # img = urllib.request.urlopen(url).read()
-        # out = open('img' + str(i) + '.jpg', "wb")
-        # out.write(img)
-        # out.close()
+    #     url = 'https://picsum.photos/100'
+    #     img = urllib.request.urlopen(url).read()
+    #     out = open('img' + str(i) + '.jpg', "wb")
+    #     out.write(img)
+    #     out.close()
+
     pixel_sizes = int(pix_size.get())
     # im = Image.open(path_init_photo).convert('RGBA')
     # im.putalpha(255)
 
-    im = Image.open(path_init_photo)
+    init_im = Image.open((path_init_photo))
+    im = Image.open(path_pix_photo)
     # im = im.convert('RGBA')
     width, height = im.size
     big_pixel_Y = height//pixel_sizes
@@ -91,15 +95,24 @@ def compare_color(path_init_photo, path_dir):
             # path_to_min = Image.merge('RGBA', (r, g, b, a))
 
             path_to_min.convert('RGBA')
-            path_to_min.putalpha(255)
+            path_to_min.putalpha(150)
 
-            im.paste(path_to_min, (pixX, pixY), path_to_min)
-    im.show()
+            init_im.paste(path_to_min, (pixX, pixY), path_to_min)
+    # im.show()
+    init_im.show()
     # im.save("new.jpg")
+
     for folder in listdir(os.getcwd()):
         a = folder.find('temp')
         if a != -1:
             shutil.rmtree(folder)
+
+    main_path = os.getcwd()
+    for root, dirs, files in os.walk(main_path):
+        for name in files:
+            a = name.find('temp')
+            if a != -1:
+                os.remove(root + '/' + name)
 
 
 def select_dir():
@@ -117,7 +130,7 @@ def save_f(im):
 
 window = Tk()
 window.title('PhotoFromPhotos')
-window.geometry('1440x1440')
+window.geometry('500x300')
 window.resizable(width=False, height=False)
 
 main_menu = Menu()
@@ -147,3 +160,5 @@ window.mainloop()
 
 # def delete_temp():
 #     return
+
+# crop result
